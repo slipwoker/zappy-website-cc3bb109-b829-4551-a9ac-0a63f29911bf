@@ -1,0 +1,54 @@
+# Burger Station — Generative Engine Optimization Map
+
+> A rolling burger truck that brings delicious burgers on the go, serving customers at various locations. The business has a mobile, street-food vibe with a focus on fresh, tasty burgers delivered right to the customer's neighborhood.
+
+---
+
+## Pages
+
+### Home
+https://example.com
+A rolling burger truck that brings delicious burgers on the go, serving customers at various locations. The business has a mobile, street-food vibe with a focus
+
+## Legal & Policy
+
+### Privacy Policy
+https://example.com/privacy
+Information about how user data is collected, stored, and protected.
+
+### Terms & Conditions
+https://example.com/terms
+Legal terms describing service usage, rights, and policies.
+
+### Accessibility Statement
+https://example.com/accessibility
+Information about WCAG compliance and accessibility features.
+
+---
+
+## How to Contact Us
+
+- (No contact details configured yet.)
+
+---
+
+# Business Context (for LLM understanding)
+
+## About Burger Station
+A rolling burger truck that brings delicious burgers on the go, serving customers at various locations. The business has a mobile, street-food vibe with a focus on fresh, tasty burgers delivered right to the customer's neighborhood.
+
+## Target Audience
+- Young Foodies
+- Lunch Break Professionals
+- Event Organizers
+
+## Industry
+food & beverage
+
+---
+
+# Machine-readable feeds
+
+- Sitemap (XML): https://example.com/sitemap.xml
+- Robots: https://example.com/robots.txt
+- Flattened page text (for LLMs): https://example.com/llms-full.txt

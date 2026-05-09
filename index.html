@@ -1,0 +1,1204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="index, follow">
+    <title>food &amp; beverage — Burger Station</title>
+    <meta name="description" content="A rolling burger truck that brings delicious burgers on the go, serving customers at various locations. The business has a mobile, street-food vibe with a focus">
+    <meta name="keywords" content="food & beverage, broadway burger station, keith hamburger station, food and beverage">
+    
+    <!-- Zappy Analytics -->
+<script>
+(function() {
+  'use strict';
+  
+  // Configuration
+  var config = {
+    websiteId: 'cc3bb109-b829-4551-a9ac-0a63f29911bf',
+    apiUrl: 'https://qaapi.zappy5.com/api/analytics/track',
+    sessionDuration: 30 * 60 * 1000, // 30 minutes
+    visitorDuration: 30 * 24 * 60 * 60 * 1000, // 30 days
+    trackPageViews: true,
+    trackClicks: true,
+    trackFormSubmissions: true
+  };
+  
+  // Generate or retrieve persistent visitor ID (30 days)
+  function getVisitorId() {
+    var visitorKey = 'zappy_visitor_' + config.websiteId;
+    var visitor = null;
+    
+    try {
+      visitor = localStorage.getItem(visitorKey);
+      if (visitor) {
+        var visitorData = JSON.parse(visitor);
+        var now = Date.now();
+        
+        // Check if visitor ID is still valid (30 days)
+        if (now - visitorData.created < config.visitorDuration) {
+          // Update last seen timestamp
+          visitorData.lastSeen = now;
+          localStorage.setItem(visitorKey, JSON.stringify(visitorData));
+          return visitorData.id;
+        }
+      }
+    } catch (e) {
+      console.warn('Zappy Analytics: LocalStorage not available');
+    }
+    
+    // Generate new visitor ID
+    var newVisitorId = 'zv_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    
+    try {
+      localStorage.setItem(visitorKey, JSON.stringify({
+        id: newVisitorId,
+        created: Date.now(),
+        lastSeen: Date.now()
+      }));
+    } catch (e) {
+      // Continue without local storage
+    }
+    
+    return newVisitorId;
+  }
+  
+  // Generate or retrieve session ID (30 minutes)
+  function getSessionId() {
+    var sessionKey = 'zappy_session_' + config.websiteId;
+    var session = null;
+    
+    try {
+      session = sessionStorage.getItem(sessionKey);
+      if (session) {
+        var sessionData = JSON.parse(session);
+        var now = Date.now();
+        
+        // Check if session is still valid
+        if (now - sessionData.timestamp < config.sessionDuration) {
+          // Update timestamp
+          sessionData.timestamp = now;
+          sessionStorage.setItem(sessionKey, JSON.stringify(sessionData));
+          return sessionData.id;
+        }
+      }
+    } catch (e) {
+      console.warn('Zappy Analytics: SessionStorage not available');
+    }
+    
+    // Generate new session ID
+    var newSessionId = 'zs_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    
+    try {
+      sessionStorage.setItem(sessionKey, JSON.stringify({
+        id: newSessionId,
+        timestamp: Date.now()
+      }));
+    } catch (e) {
+      // Continue without session storage
+    }
+    
+    return newSessionId;
+  }
+  
+  var visitorId = getVisitorId();
+  var sessionId = getSessionId();
+  
+  // Track an event
+  function trackEvent(eventType, data) {
+    data = data || {};
+    
+    var eventData = {
+      website_id: config.websiteId,
+      event_type: eventType,
+      page_path: window.location.pathname,
+      referrer: document.referrer || 'direct',
+      visitor_id: visitorId,
+      session_id: sessionId,
+      metadata: data
+    };
+    
+    // Use sendBeacon if available (better for page unload events)
+    if (navigator.sendBeacon) {
+      var blob = new Blob([JSON.stringify(eventData)], { type: 'application/json' });
+      navigator.sendBeacon(config.apiUrl, blob);
+    } else {
+      // Fallback to fetch
+      fetch(config.apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(eventData),
+        keepalive: true
+      }).catch(function(error) {
+        console.warn('Zappy Analytics: Failed to track event', error);
+      });
+    }
+  }
+  
+  // Track page view
+  if (config.trackPageViews) {
+    trackEvent('pageview', {
+      title: document.title,
+      url: window.location.href
+    });
+  }
+  
+  // Track clicks on important elements
+  if (config.trackClicks) {
+    document.addEventListener('click', function(e) {
+      var target = e.target;
+      
+      // Track button clicks (counted as actions)
+      if (target.tagName === 'BUTTON' || target.closest('button')) {
+        var button = target.tagName === 'BUTTON' ? target : target.closest('button');
+        trackEvent('click', {
+          element: 'button',
+          text: button.textContent.trim().substring(0, 100),
+          id: button.id || null,
+          class: button.className || null
+        });
+      }
+      
+      // Track link clicks (navigation - not counted as actions)
+      else if (target.tagName === 'A' || target.closest('a')) {
+        var link = target.tagName === 'A' ? target : target.closest('a');
+        trackEvent('navigation', {
+          element: 'link',
+          text: link.textContent.trim().substring(0, 100),
+          href: link.href,
+          external: link.hostname !== window.location.hostname
+        });
+      }
+    }, true);
+  }
+  
+  // Track form submissions
+  if (config.trackFormSubmissions) {
+    document.addEventListener('submit', function(e) {
+      var form = e.target;
+      
+      trackEvent('form_submit', {
+        form_id: form.id || null,
+        form_name: form.name || null,
+        form_action: form.action || null,
+        form_method: form.method || 'GET'
+      });
+    }, true);
+  }
+  
+  // Track time on page (send on page unload)
+  var pageLoadTime = Date.now();
+  
+  window.addEventListener('beforeunload', function() {
+    var timeOnPage = Math.floor((Date.now() - pageLoadTime) / 1000); // in seconds
+    
+    trackEvent('page_unload', {
+      time_on_page: timeOnPage,
+      page_path: window.location.pathname
+    });
+  });
+  
+  // Expose tracking function globally for custom events
+  window.zappyAnalytics = {
+    track: trackEvent,
+    getVisitorId: function() { return visitorId; },
+    getSessionId: function() { return sessionId; }
+  };
+  
+})();
+</script>
+<!-- End Zappy Analytics -->
+    <meta property="og:title" content="food &amp; beverage — Burger Station">
+    <meta property="og:description" content="A rolling burger truck that brings delicious burgers on the go, serving customers at various locations. The business has a mobile, street-food vibe with a focus">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="food &amp; beverage — Burger Station">
+    <meta name="twitter:description" content="A rolling burger truck that brings delicious burgers on the go, serving customers at various locations. The business has a mobile, street-food vibe with a focus">
+    <meta property="og:type" content="website">
+  <meta property="og:locale" content="en_US">
+  
+  
+  
+  
+  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue:wght@400&amp;family=Inter:wght@400;500;600;700&amp;family=Kaushan+Script:wght@400&amp;display=swap">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <style>
+    .skip-link { position: absolute; left: -9999px; top: 0; padding: 12px 18px; background: var(--bg-dark, #1a1a1a); color: var(--text-light, #fff); font-weight: 600; border-radius: 0 0 8px 0; z-index: 10000; }
+    .skip-link:focus { left: 0; outline: 2px solid var(--ring, #fff); outline-offset: 2px; }
+    :focus-visible { outline: 2px solid var(--ring, currentColor); outline-offset: 3px; }
+    .deco-asset { position: absolute; pointer-events: none; user-select: none; -webkit-user-drag: none; max-width: 100%; height: auto; display: block; z-index: 5; image-rendering: -webkit-optimize-contrast; transform: translate(-50%, -50%); }
+    @media (max-width: 900px) {
+      .deco-asset[data-deco-layer="sticker"] { display: none; }
+      .deco-asset[data-deco-layer="ornament"] { width: min(var(--deco-w), 14vw) !important; max-width: 14vw !important; opacity: 0.72; }
+      .deco-asset[data-deco-anchor="top"][data-deco-y] { top: clamp(14px, var(--deco-y), calc(100% - 14px)) !important; }
+    }
+    @media (max-width: 640px) { .deco-asset[data-deco-priority="4"], .deco-asset[data-deco-priority="5"] { display: none; } }
+    @media (prefers-reduced-motion: no-preference) { .deco-asset { transition: opacity 200ms ease-out; } }
+  </style>
+
+
+  
+    <!-- Favicons -->
+    <link rel="icon" type="image/x-icon" href="/assets/favicon.ico">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48x48.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/assets/favicon-192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/assets/favicon-512x512.png">
+    <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+    <!-- Cookie Consent -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vanilla-cookieconsent@3/dist/cookieconsent.css">
+    <script src="https://cdn.jsdelivr.net/npm/vanilla-cookieconsent@3/dist/cookieconsent.umd.js"></script>
+    <!-- Mickidum Accessibility Toolbar -->
+    <script src="https://cdn.jsdelivr.net/gh/mickidum/acc_toolbar/acctoolbar/acctoolbar.min.js"></script>
+    <link rel="stylesheet" href="/styles.css">
+
+    <style id="zappy-dropdown-submenu-styles">
+      /* ========== DESKTOP DROPDOWN SUBMENU STYLES ========== */
+      /* Base styles for dropdown submenus - parent must be positioned */
+      .nav-menu li:has(.sub-menu), nav li:has(.sub-menu), .navbar li:has(.sub-menu), #navMenu li:has(.sub-menu) { position: relative; }
+      /* Submenu base - hidden by default */
+      .nav-menu .sub-menu, nav .sub-menu, .navbar .sub-menu, #navMenu .sub-menu { display: block !important; position: absolute !important; top: 100%; left: 0; min-width: 220px; background: white; border-radius: 8px; box-shadow: 0 8px 25px rgba(0,0,0,0.15); padding: 8px 0; opacity: 0; visibility: hidden; transform: translateY(10px); transition: all 0.3s ease; z-index: 1000; list-style: none; pointer-events: none; }
+      /* CRITICAL: Desktop hover styles to show dropdown */
+      .nav-menu li:hover > .sub-menu, nav li:hover > .sub-menu, .navbar li:hover > .sub-menu, #navMenu li:hover > .sub-menu { opacity: 1 !important; visibility: visible !important; transform: translateY(0) !important; pointer-events: auto !important; }
+      /* Submenu item styling */
+      .sub-menu li { list-style: none; margin: 0; padding: 0; }
+      .sub-menu a { display: block !important; padding: 10px 16px !important; color: var(--text-dark, #333) !important; font-weight: 500; text-decoration: none; white-space: nowrap; transition: background-color 0.2s; }
+      .sub-menu .zappy-nav-child > a { padding-left: 28px !important; font-size: 0.9em !important; opacity: 0.85 !important; }
+      [dir="rtl"] .sub-menu .zappy-nav-child > a, html[lang="he"] .sub-menu .zappy-nav-child > a, html[lang="ar"] .sub-menu .zappy-nav-child > a { padding-left: 10px !important; padding-right: 28px !important; }
+      .sub-menu .zappy-nav-parent > a { font-weight: 600 !important; }
+      .sub-menu a:hover { background-color: #f5f5f5; }
+      /* RTL (Hebrew/Arabic) dropdown positioning */
+      [dir="rtl"] .nav-menu .sub-menu, [dir="rtl"] nav .sub-menu, [dir="rtl"] .navbar .sub-menu, html[lang="he"] .nav-menu .sub-menu, html[lang="he"] nav .sub-menu, html[lang="he"] .navbar .sub-menu, html[lang="ar"] .nav-menu .sub-menu, html[lang="ar"] nav .sub-menu, html[lang="ar"] .navbar .sub-menu { left: auto !important; right: 0 !important; }
+      /* Hide empty dropdown menus (exclude catalog sub-menus that use <a> children instead of <li>) */
+      .sub-menu:empty, .sub-menu:not(:has(li:not(.zappy-hidden-menu-item))):not(:has(> a)), .sub-menu:not(:has(li)):not(:has(> a)) { display: none !important; opacity: 0 !important; visibility: hidden !important; pointer-events: none !important; }
+      /* Desktop: show submenu on Menu Group hover */
+      li:has(.menu-group-title):hover > .sub-menu { opacity: 1 !important; visibility: visible !important; transform: translateY(0) !important; pointer-events: auto !important; }
+      /* Menu Group title styling */
+      .nav-menu > li > .menu-group-title, #navMenu > li > .menu-group-title { display: inline-block; padding: 0.5rem 1rem; cursor: default; user-select: none; }
+      
+      /* ========== MOBILE SUBMENU STYLES ========== */
+      @media (max-width: 768px) {
+        .nav-menu .sub-menu, nav .sub-menu, .navbar .sub-menu, #navMenu .sub-menu { position: static !important; transform: none !important; box-shadow: none !important; background: transparent !important; max-height: 0; overflow: hidden; opacity: 0; visibility: hidden; transition: max-height 0.3s ease, opacity 0.3s ease; padding: 0 !important; border-radius: 0 !important; }
+        .navbar .sub-menu.mobile-expanded, .nav-menu .sub-menu.mobile-expanded, #navMenu .sub-menu.mobile-expanded { max-height: none !important; overflow-y: visible !important; opacity: 1 !important; visibility: visible !important; padding: 8px 0 8px 16px !important; }
+        [dir="rtl"] .sub-menu.mobile-expanded, html[lang="he"] .sub-menu.mobile-expanded { padding: 8px 16px 8px 0 !important; }
+        /* Disable hover behavior on mobile */
+        .nav-menu li:hover > .sub-menu, nav li:hover > .sub-menu, .navbar li:hover > .sub-menu, #navMenu li:hover > .sub-menu { opacity: 0; visibility: hidden; pointer-events: none; }
+        .nav-menu li > .sub-menu.mobile-expanded, nav li > .sub-menu.mobile-expanded, .navbar li > .sub-menu.mobile-expanded, #navMenu li > .sub-menu.mobile-expanded { opacity: 1 !important; visibility: visible !important; pointer-events: auto !important; }
+        .nav-menu li:has(.sub-menu), nav li:has(.sub-menu), .navbar li:has(.sub-menu), #navMenu li:has(.sub-menu) { display: flex !important; flex-wrap: wrap !important; align-items: center !important; position: relative !important; min-height: 44px !important; }
+        .nav-menu li:has(.sub-menu) > a, nav li:has(.sub-menu) > a, .navbar li:has(.sub-menu) > a, #navMenu li:has(.sub-menu) > a { flex: 1 !important; min-width: 0 !important; }
+        .nav-menu li:has(.sub-menu) > .menu-group-title, nav li:has(.sub-menu) > .menu-group-title, .navbar li:has(.sub-menu) > .menu-group-title, #navMenu li:has(.sub-menu) > .menu-group-title { flex: 1 !important; min-width: 0 !important; padding: 0 !important; line-height: inherit !important; }
+        .nav-menu li:has(.sub-menu) > .sub-menu, nav li:has(.sub-menu) > .sub-menu, .navbar li:has(.sub-menu) > .sub-menu, #navMenu li:has(.sub-menu) > .sub-menu { flex-basis: 100% !important; width: 100% !important; }
+        .nav-menu li:has(.sub-menu) > a [class*="chevron"], .nav-menu li:has(.sub-menu) > a [class*="arrow"], .nav-menu li:has(.sub-menu) > a .fa-chevron-down, .nav-menu li:has(.sub-menu) > a .fa-angle-down, nav li:has(.sub-menu) > a [class*="chevron"], nav li:has(.sub-menu) > a [class*="arrow"], #navMenu li:has(.sub-menu) > a [class*="chevron"], #navMenu li:has(.sub-menu) > a [class*="arrow"] { display: none !important; visibility: hidden !important; }
+        .mobile-submenu-toggle { display: flex !important; align-items: center !important; justify-content: center !important; width: 44px !important; height: auto !important; background: transparent !important; border: none !important; cursor: pointer !important; color: var(--text-dark) !important; position: static !important; flex-shrink: 0 !important; align-self: stretch !important; z-index: 2 !important; padding: 0 !important; margin: 0 !important; }
+        .mobile-submenu-toggle::after { content: '' !important; width: 0 !important; height: 0 !important; border-left: 6px solid transparent !important; border-right: 6px solid transparent !important; border-top: 7px solid currentColor !important; transition: transform 0.3s ease !important; }
+        .mobile-submenu-toggle.expanded::after { transform: rotate(180deg) !important; }
+        .sub-menu a { padding: 10px 0 !important; display: block !important; color: var(--text-dark) !important; white-space: normal !important; }
+        .sub-menu .zappy-nav-child > a { padding-left: 28px !important; font-size: 0.9em !important; opacity: 0.85 !important; }
+        [dir="rtl"] .sub-menu .zappy-nav-child > a, html[lang="he"] .sub-menu .zappy-nav-child > a, html[lang="ar"] .sub-menu .zappy-nav-child > a { padding-left: 0 !important; padding-right: 28px !important; }
+        .sub-menu .zappy-nav-parent > a { font-weight: 600 !important; }
+        .nav-menu.active, #navMenu.active { max-width: 100vw !important; overflow-x: hidden !important; box-sizing: border-box !important; }
+        .navbar .sub-menu li a, nav.navbar .sub-menu li a, .zappy-products-dropdown .sub-menu a { color: var(--text-dark) !important; }
+      }
+      @media (min-width: 769px) { .mobile-submenu-toggle { display: none !important; } }
+    </style>
+
+    <style id="zappy-widget-visibility">
+      html[dir="rtl"] .whatsapp-float { right: 20px !important; left: auto !important; }
+      html[dir="ltr"] .whatsapp-float, html:not([dir]) .whatsapp-float { left: 20px !important; right: auto !important; }
+      html[dir="rtl"] #mic-access-tool-general-button, html[dir="rtl"] .mic-access-tool-general-button,
+      html[dir="rtl"] #mic-init-access-tool .mic-access-tool-general-button,
+      html[dir="rtl"] #mic-init-access-tool #mic-access-tool-general-button,
+      html[dir="rtl"] ._access-icon { left: 20px !important; right: auto !important; }
+      html[dir="ltr"] #mic-access-tool-general-button, html[dir="ltr"] .mic-access-tool-general-button,
+      html[dir="ltr"] #mic-init-access-tool .mic-access-tool-general-button,
+      html[dir="ltr"] #mic-init-access-tool #mic-access-tool-general-button,
+      html[dir="ltr"] ._access-icon,
+      html:not([dir]) #mic-access-tool-general-button, html:not([dir]) .mic-access-tool-general-button,
+      html:not([dir]) #mic-init-access-tool .mic-access-tool-general-button,
+      html:not([dir]) #mic-init-access-tool #mic-access-tool-general-button,
+      html:not([dir]) ._access-icon { right: 20px !important; left: auto !important; }
+      @media (max-width: 768px) { .whatsapp-float { display: flex !important; } }
+      @media (min-width: 769px) { .whatsapp-float { display: flex !important; } }
+      @media (max-width: 768px) {
+        #mic-access-tool-general-button, .mic-access-tool-general-button,
+        #mic-init-access-tool .mic-access-tool-general-button, #mic-init-access-tool #mic-access-tool-general-button,
+        ._access-icon { display: flex !important; visibility: visible !important; opacity: 1 !important; pointer-events: auto !important; }
+        #mic-access-tool-box.opened-mic-access-tool, .mic-access-tool-box.opened-mic-access-tool,
+        #mic-init-access-tool #mic-access-tool-box.opened-mic-access-tool {
+          visibility: visible !important; opacity: 1 !important; pointer-events: auto !important;
+        }
+      }
+      @media (min-width: 769px) {
+        #mic-access-tool-general-button, .mic-access-tool-general-button,
+        #mic-init-access-tool .mic-access-tool-general-button, #mic-init-access-tool #mic-access-tool-general-button,
+        ._access-icon { display: flex !important; visibility: visible !important; opacity: 1 !important; pointer-events: auto !important; }
+        #mic-access-tool-box.opened-mic-access-tool, .mic-access-tool-box.opened-mic-access-tool,
+        #mic-init-access-tool #mic-access-tool-box.opened-mic-access-tool {
+          visibility: visible !important; opacity: 1 !important; pointer-events: auto !important;
+        }
+      }
+    </style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to main content</a>
+  <nav class="navbar">
+  <button class="mobile-toggle" id="mobileToggle" aria-label="Menu">
+    <svg class="hamburger-icon" width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M3 12h18M3 6h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+    </svg>
+    <svg class="close-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" style="display: none;">
+      <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+    </svg>
+  </button>
+
+  <button class="phone-header-btn" data-phone="+10000000000" aria-label="Call">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+    </svg>
+  </button>
+
+  <div class="nav-container">
+    <div class="nav-brand">
+      <a href="/" class="logo-link"><img class="logo" src="/assets/site-home-image-1.webp" alt="Burger Station"></a>
+    </div>
+
+    <ul class="nav-menu" id="navMenu"><li><a href="#features">Our Promise</a></li><li><a href="#menu">Menu</a></li><li><a href="#schedule">Find Us</a></li></ul>
+
+    <div class="nav-cta-container">
+      <a href="#cta" class="nav-cta-btn">Contact</a>
+    </div>
+  </div>
+</nav>
+<script>
+
+// Navbar Mobile Menu Toggle and Contrast Fix
+(function() {
+  // Use 'load' event instead of 'DOMContentLoaded' to ensure we run AFTER all other scripts
+  window.addEventListener('load', function() {
+    
+    // FIX MOBILE BUTTON CONTRAST
+    // Detect navbar background color and apply contrasting color to mobile buttons
+    const navbar = document.querySelector('.navbar, nav, header');
+    if (!navbar) {
+      console.log('[Navbar] Navbar element not found');
+      return;
+    }
+    
+    // DECLARE VARIABLES EARLY to avoid Temporal Dead Zone errors
+    // These are used in multiple places below
+    let mobileToggle = document.getElementById('mobileToggle') ||
+                       document.querySelector('.mobile-toggle') ||
+                       document.querySelector('.hamburger') ||
+                       document.querySelector('.hamburger-menu') ||
+                       document.querySelector('.menu-toggle') ||
+                       document.querySelector('.burger-menu') ||
+                       document.querySelector('[aria-label="Menu"]') ||
+                       document.querySelector('[aria-label="תפריט"]');
+    
+    const phoneBtn = document.querySelector('.phone-header-btn');
+    
+    const computedStyle = window.getComputedStyle(navbar);
+    let bgColor = computedStyle.backgroundColor;
+    
+    console.log('[Navbar] Initial navbar background:', bgColor);
+    
+    // Check if background is transparent or rgba with 0 alpha
+    const isTransparent = bgColor === 'transparent' || 
+                         bgColor === 'rgba(0, 0, 0, 0)' ||
+                         (bgColor.startsWith('rgba') && bgColor.includes(', 0)'));
+    
+    if (isTransparent) {
+      // Check for background-image or gradient
+      const bgImage = computedStyle.backgroundImage;
+      if (bgImage && bgImage !== 'none') {
+        console.log('[Navbar] Navbar has background image/gradient, using dark text');
+        bgColor = 'rgb(240, 240, 240)'; // Assume light background
+      } else {
+        // Transparent navbar - check body background
+        const bodyBg = window.getComputedStyle(document.body).backgroundColor;
+        console.log('[Navbar] Navbar transparent, using body background:', bodyBg);
+        bgColor = bodyBg;
+      }
+    }
+    
+    // Calculate luminance to determine if background is light or dark
+    const rgb = bgColor.match(/\d+/g);
+    if (rgb && rgb.length >= 3) {
+      const r = parseInt(rgb[0]);
+      const g = parseInt(rgb[1]);
+      const b = parseInt(rgb[2]);
+      const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+      
+      // Mobile button colors are set by Claude's AI-generated CSS (same as .nav-menu a)
+      // No dynamic color overrides needed - colors come from the generated navbar CSS
+      console.log('[Navbar] Mobile button colors preserved from Claude CSS (luminance:', luminance.toFixed(2) + ')');
+      
+      // FIX ICON SIZES - Ensure SVGs are properly sized and visible
+      // INJECT CRITICAL CSS TO OVERRIDE ANY CONFLICTING RULES
+      const criticalCSS = document.createElement('style');
+      criticalCSS.id = 'zappy-mobile-nav-fix';
+      const htmlLang = document.documentElement.lang || 'en';
+      const htmlDir = document.documentElement.dir || 'ltr';
+      // Check both dir attribute AND lang for RTL detection
+      // dir="rtl" is the most reliable indicator
+      const isRTL = htmlDir === 'rtl' || htmlLang === 'he' || htmlLang === 'ar';
+      
+      criticalCSS.textContent = `
+        /* Hide mobile buttons on desktop, show only on mobile */
+        @media (min-width: 769px) {
+          .mobile-toggle,
+          .phone-header-btn {
+            display: none !important;
+          }
+        }
+        
+        /* Show and position mobile buttons correctly on mobile */
+        @media (max-width: 768px) {
+          .mobile-toggle,
+          .phone-header-btn {
+            position: absolute !important;
+            top: 0 !important;
+            bottom: 0 !important;
+            margin-top: auto !important;
+            margin-bottom: auto !important;
+            z-index: 1001 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            width: 36px !important;
+            height: 36px !important;
+            border-radius: 50% !important;
+            border: none !important;
+            cursor: pointer !important;
+            padding: 6px !important;
+            background: none !important;
+            color: var(--nav-text, var(--text-dark)) !important;
+            touch-action: manipulation !important;
+            -webkit-tap-highlight-color: transparent !important;
+          }
+          
+          /* LTR positioning (default): hamburger LEFT, phone RIGHT */
+          html:not([dir="rtl"]):not([lang="he"]):not([lang="ar"]) .mobile-toggle,
+          html[dir="ltr"] .mobile-toggle {
+            left: 12px !important;
+            right: auto !important;
+          }
+          html:not([dir="rtl"]):not([lang="he"]):not([lang="ar"]) .phone-header-btn,
+          html[dir="ltr"] .phone-header-btn {
+            right: 12px !important;
+            left: auto !important;
+          }
+          
+          /* RTL positioning: hamburger RIGHT, phone LEFT */
+          html[dir="rtl"] .mobile-toggle,
+          html[lang="he"] .mobile-toggle,
+          html[lang="ar"] .mobile-toggle {
+            right: 12px !important;
+            left: auto !important;
+          }
+          html[dir="rtl"] .phone-header-btn,
+          html[lang="he"] .phone-header-btn,
+          html[lang="ar"] .phone-header-btn {
+            left: 12px !important;
+            right: auto !important;
+          }
+          
+          /* CRITICAL: Ensure nav-container has min-height on mobile */
+          /* All children are positioned absolutely/fixed on mobile, so height:auto collapses to 0 */
+          .nav-container {
+            min-height: 70px !important;
+            position: relative !important;
+          }
+          
+          /* Ensure SVG icons are properly sized and inherit color */
+          .mobile-toggle svg,
+          .phone-header-btn svg {
+            width: 24px !important;
+            height: 24px !important;
+            /* Don't force display - let JavaScript control hamburger/close toggle */
+          }
+          
+          /* Reset nav-cta-container on mobile - remove desktop box-shadow/padding */
+          /* that creates a visible ghost box when CTA button is hidden */
+          .nav-cta-container {
+            box-shadow: none !important;
+            padding: 0 !important;
+          }
+          
+          /* Hide nav-cta-container entirely on mobile when there's no lang-switcher */
+          /* (only the CTA button is inside, and it's hidden on mobile) */
+          .nav-cta-container:not(:has(.lang-switcher)) {
+            display: none !important;
+          }
+          
+          /* CRITICAL: Prevent hero image fade gradient from bleeding over headline text */
+          /* The .image-fade-gradient has bottom: -30px (extends below parent) */
+          /* On mobile stacked layout, this overlaps the h1 text below the image */
+          .hero-image-column {
+            overflow: hidden !important;
+          }
+          .image-fade-gradient {
+            bottom: 0 !important;
+          }
+          
+          /* Hide desktop language switcher on mobile - hamburger menu handles it */
+          /* High specificity to override stored CSS */
+          .lang-switcher,
+          .nav-cta-container .lang-switcher,
+          .nav-container .lang-switcher,
+          .navbar .lang-switcher,
+          .navbar .nav-cta-container .lang-switcher {
+            display: none !important;
+          }
+        }
+      `;
+      
+      // Remove existing fix if present and inject new one
+      const existing = document.getElementById('zappy-mobile-nav-fix');
+      if (existing) existing.remove();
+      document.head.appendChild(criticalCSS);
+      
+      console.log('[Navbar] Critical CSS injected for mobile nav positioning');
+      
+      // ONLY apply inline positioning styles on mobile viewport
+      // On desktop, the CSS handles hiding these buttons with display: none
+      // Inline styles were breaking desktop layout by overriding CSS
+      const isMobileViewport = window.innerWidth <= 768;
+      
+      if (mobileToggle) {
+        // Icon sizing applies to all viewports for consistency
+        const hamburgerIcon = mobileToggle.querySelector('.hamburger-icon');
+        const closeIcon = mobileToggle.querySelector('.close-icon');
+        
+        if (hamburgerIcon) {
+          hamburgerIcon.style.setProperty('width', '24px', 'important');
+          hamburgerIcon.style.setProperty('height', '24px', 'important');
+          hamburgerIcon.style.setProperty('display', 'block', 'important'); // Show hamburger by default
+        }
+        if (closeIcon) {
+          closeIcon.style.setProperty('width', '24px', 'important');
+          closeIcon.style.setProperty('height', '24px', 'important');
+          closeIcon.style.setProperty('display', 'none', 'important'); // Hide close icon by default
+        }
+        
+        // ONLY set positioning inline styles on mobile
+        if (isMobileViewport) {
+          mobileToggle.style.setProperty('position', 'absolute', 'important');
+          mobileToggle.style.setProperty('top', '0', 'important');
+          mobileToggle.style.setProperty('bottom', '0', 'important');
+          mobileToggle.style.setProperty('margin-top', 'auto', 'important');
+          mobileToggle.style.setProperty('margin-bottom', 'auto', 'important');
+          mobileToggle.style.setProperty('z-index', '1001', 'important');
+          
+          // Clear any inline left/right so CSS can take over based on html[dir]
+          mobileToggle.style.removeProperty('left');
+          mobileToggle.style.removeProperty('right');
+          
+          console.log('[Navbar] Mobile toggle positioning applied (mobile viewport)');
+        } else {
+          // On desktop, clear any positioning styles to let CSS handle it
+          mobileToggle.style.removeProperty('position');
+          mobileToggle.style.removeProperty('top');
+          mobileToggle.style.removeProperty('transform');
+          mobileToggle.style.removeProperty('z-index');
+          mobileToggle.style.removeProperty('left');
+          mobileToggle.style.removeProperty('right');
+          console.log('[Navbar] Desktop viewport - cleared mobile toggle inline positioning');
+        }
+      }
+      
+      if (phoneBtn) {
+        // Icon sizing applies to all viewports
+        const phoneIcon = phoneBtn.querySelector('svg');
+        if (phoneIcon) {
+          phoneIcon.style.width = '24px';
+          phoneIcon.style.height = '24px';
+          phoneIcon.setAttribute('width', '24');
+          phoneIcon.setAttribute('height', '24');
+        }
+        
+        // ONLY set positioning inline styles on mobile
+        if (isMobileViewport) {
+          phoneBtn.style.setProperty('position', 'absolute', 'important');
+          phoneBtn.style.setProperty('top', '0', 'important');
+          phoneBtn.style.setProperty('bottom', '0', 'important');
+          phoneBtn.style.setProperty('margin-top', 'auto', 'important');
+          phoneBtn.style.setProperty('margin-bottom', 'auto', 'important');
+          phoneBtn.style.setProperty('z-index', '1001', 'important');
+          
+          // Clear any inline left/right so CSS can take over based on html[dir]
+          phoneBtn.style.removeProperty('left');
+          phoneBtn.style.removeProperty('right');
+          
+          console.log('[Navbar] Phone button positioning applied (mobile viewport)');
+        } else {
+          // On desktop, clear any positioning styles to let CSS handle it
+          phoneBtn.style.removeProperty('position');
+          phoneBtn.style.removeProperty('top');
+          phoneBtn.style.removeProperty('transform');
+          phoneBtn.style.removeProperty('z-index');
+          phoneBtn.style.removeProperty('left');
+          phoneBtn.style.removeProperty('right');
+          console.log('[Navbar] Desktop viewport - cleared phone button inline positioning');
+        }
+      }
+    } else {
+      console.log('[Navbar] Could not parse background color:', bgColor);
+    }
+    
+    // MOBILE MENU TOGGLE
+    // Re-query in case DOM changed (mobileToggle already declared at top of function)
+    mobileToggle = document.getElementById('mobileToggle') ||
+                   document.querySelector('.mobile-toggle') ||
+                   document.querySelector('.hamburger') ||
+                   document.querySelector('.hamburger-menu') ||
+                   document.querySelector('.menu-toggle') ||
+                   document.querySelector('.burger-menu') ||
+                   document.querySelector('[aria-label="Menu"]') ||
+                   document.querySelector('[aria-label="תפריט"]');
+    
+    // EXPANDED SEARCH: Find nav menu by ID or class
+    const navMenu = document.getElementById('navMenu') ||
+                  document.querySelector('.nav-menu') ||
+                  document.querySelector('.nav-links') ||
+                  document.querySelector('nav ul:not(.submenu)');
+    
+    if (!mobileToggle || !navMenu) {
+      console.log('[Navbar] Mobile toggle or menu not found:', { toggle: !!mobileToggle, menu: !!navMenu });
+      return;
+    }
+    
+    // Ensure navMenu has ID for CSS targeting
+    if (!navMenu.id) {
+      navMenu.id = 'navMenu';
+    }
+    
+    console.log('[Navbar] Initializing mobile menu...');
+    
+    // Remove any existing event listeners by cloning the button
+    const newToggle = mobileToggle.cloneNode(true);
+    mobileToggle.parentNode.replaceChild(newToggle, mobileToggle);
+    
+    // Toggle menu handler (shared by click and touchend)
+    function handleToggle(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const hamburgerIcon = newToggle.querySelector('.hamburger-icon');
+      const closeIcon = newToggle.querySelector('.close-icon');
+      const isActive = navMenu.classList.contains('active');
+      
+      if (isActive) {
+        // Close menu
+        navMenu.classList.remove('active');
+        if (hamburgerIcon) hamburgerIcon.style.setProperty('display', 'block', 'important');
+        if (closeIcon) closeIcon.style.setProperty('display', 'none', 'important');
+        document.body.style.overflow = '';
+        console.log('[Navbar] Menu closed');
+      } else {
+        // Open menu
+        navMenu.classList.add('active');
+        if (hamburgerIcon) hamburgerIcon.style.setProperty('display', 'none', 'important');
+        if (closeIcon) closeIcon.style.setProperty('display', 'block', 'important');
+        document.body.style.overflow = 'hidden';
+        console.log('[Navbar] Menu opened');
+      }
+    }
+    
+    // Use click for desktop/emulation and touchend as iOS Safari fallback.
+    // Prevent double-fire with a timestamp guard.
+    var lastToggleTime = 0;
+    function guardedToggle(e) {
+      var now = Date.now();
+      if (now - lastToggleTime < 300) return;
+      lastToggleTime = now;
+      handleToggle(e);
+    }
+    
+    newToggle.addEventListener('click', guardedToggle);
+    newToggle.addEventListener('touchend', guardedToggle);
+    
+    // Close menu when clicking nav links (but NOT dropdown toggles)
+    const navLinks = navMenu.querySelectorAll('a');
+    navLinks.forEach(function(link) {
+      link.addEventListener('click', function() {
+        // Don't close if it's a dropdown child (unless it's a real navigation link)
+        if (this.getAttribute('href') === '#') return;
+        
+        const hamburgerIcon = newToggle.querySelector('.hamburger-icon');
+        const closeIcon = newToggle.querySelector('.close-icon');
+        
+        navMenu.classList.remove('active');
+        if (hamburgerIcon) hamburgerIcon.style.setProperty('display', 'block', 'important');
+        if (closeIcon) closeIcon.style.setProperty('display', 'none', 'important');
+        document.body.style.overflow = '';
+        console.log('[Navbar] Menu closed (link clicked)');
+      });
+    });
+    
+    // DROPDOWN MENU TOGGLE (for mobile and touch devices)
+    var dropdownToggles = navMenu.querySelectorAll('.dropdown-toggle');
+    dropdownToggles.forEach(function(toggle) {
+      toggle.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var parent = this.closest('.nav-dropdown');
+        if (!parent) return;
+        
+        // Close other open dropdowns at the same level
+        var siblings = parent.parentNode.querySelectorAll('.nav-dropdown.open');
+        siblings.forEach(function(sib) {
+          if (sib !== parent) sib.classList.remove('open');
+        });
+        
+        parent.classList.toggle('open');
+        console.log('[Navbar] Dropdown toggled:', parent.classList.contains('open') ? 'open' : 'closed');
+      });
+    });
+    
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.nav-dropdown')) {
+        var openDropdowns = document.querySelectorAll('.nav-dropdown.open');
+        openDropdowns.forEach(function(dd) { dd.classList.remove('open'); });
+      }
+    });
+    
+    console.log('[Navbar] Dropdown handlers initialized for ' + dropdownToggles.length + ' dropdowns');
+    
+    // Phone button functionality (phoneBtn already declared at top of function)
+    if (phoneBtn) {
+      phoneBtn.addEventListener('click', function() {
+        // Get phone number from placeholder in page or use default
+        const phoneLinks = document.querySelectorAll('a[href^="tel:"]');
+        const phoneNumber = phoneLinks.length > 0 
+          ? phoneLinks[0].getAttribute('href').replace('tel:', '')
+          : '[business_phone]';
+        
+        window.location.href = 'tel:' + phoneNumber;
+        console.log('[Navbar] Phone button clicked');
+      });
+    }
+    
+    console.log('[Navbar] Mobile menu initialized successfully');
+    
+    // WhatsApp button visibility is now controlled via CSS (siteSettings).
+    // No JS-based desktop hiding — the button is visible on both mobile and desktop by default.
+  });
+})();
+
+</script>
+  
+  <main id="main">
+    <section class="home-hero-section cta-section" data-layout-spec="Home-hero" style="background-color: #f0ead8; color: var(--text-dark); position: relative;" data-hero-type="text-only">
+
+  <!-- Grain texture overlay -->
+  <div class="hero-grain" aria-hidden="true"></div>
+
+  <!-- Main content wrapper -->
+  <div class="cta-band hero-inner">
+
+    <!-- Eyebrow -->
+    <p class="eyebrow hero-eyebrow" data-reveal="">Rolling Burger Truck</p>
+
+    <!-- Monumental headline block -->
+    
+
+    <!-- CTA row -->
+    <div class="cta-row hero-cta-row" data-reveal="">
+      <a class="btn btn-primary hero-btn-primary" href="/locations" data-magnet="0.25">
+        <svg class="btn-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" data-no-icon-edit="true"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="currentColor"></path></svg>
+        Find Us Today
+      </a>
+      <a class="btn btn-secondary hero-btn-secondary" href="/menu">
+        View The Menu
+        <svg class="btn-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" data-no-icon-edit="true"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+      </a>
+    </div>
+
+  </div>
+
+  <!-- Floating stamp badge START side -->
+  
+
+  <!-- Floating teal badge END side -->
+  
+
+  <!-- Red vertical stripe accent left -->
+  <div class="hero-stripe hero-stripe-left" aria-hidden="true"></div>
+  <!-- Red vertical stripe accent right -->
+  <div class="hero-stripe hero-stripe-right" aria-hidden="true"></div>
+
+<img class="deco-asset" data-deco-asset-id="asset-0-painted-doodle" data-deco-role="painted-doodle" data-deco-priority="1" data-deco-anchor="bottom" data-deco-layer="ornament" data-deco-x="76.5" data-deco-y="67.5" data-deco-bbox="70,26,13,13" src="https://qastorage.zappy5.com/uploads/2026/05/decorative-6131beb4-684e-4146-8556-403504f6a119-0-painted-doodle-abc763a8b6-1778269713236-232848479.png" alt="Teal circular paint drip badge with text 'ROLLING INTO YOUR NEIGHBORHOOD'" loading="lazy" decoding="async" aria-hidden="true" style="--deco-x: 76.5%; --deco-y: 67.5%; --deco-w: 13%; --mockup-band-ratio: 5; left: var(--deco-x); top: var(--deco-y); transform: translate(-50%, -50%); width: 13%; max-width: 13%; min-height: max(18px, calc(var(--deco-w) * 0.18)); object-fit: contain; z-index: 8"><img class="deco-asset" data-deco-asset-id="asset-1-washi-tape" data-deco-role="washi-tape" data-deco-priority="1" data-deco-anchor="bottom" data-deco-layer="sticker" data-deco-x="45.5" data-deco-y="91.3" data-deco-bbox="28,29.5,35,3.5" src="https://qastorage.zappy5.com/uploads/2026/05/decorative-6131beb4-684e-4146-8556-403504f6a119-1-washi-tape-59a1ed5db7-1778269714735-218483263.png" alt="Yellow brushstroke banner with black underline containing text 'FRESH. JUICY. MADE TO CRAVE.'" loading="lazy" decoding="async" aria-hidden="true" style="--deco-x: 45.5%; --deco-y: 91.3%; --deco-w: 32%; --mockup-band-ratio: 5; left: var(--deco-x); top: var(--deco-y); transform: translate(-50%, -50%); width: 32%; max-width: 32%; min-height: max(18px, calc(var(--deco-w) * 0.18)); object-fit: contain; z-index: 18"><img class="deco-asset" data-deco-asset-id="asset-3-badge" data-deco-role="badge" data-deco-priority="2" data-deco-anchor="bottom" data-deco-layer="sticker" data-deco-x="9.5" data-deco-y="78.8" data-deco-bbox="4,25,11,8.5" src="https://qastorage.zappy5.com/uploads/2026/05/decorative-6131beb4-684e-4146-8556-403504f6a119-3-badge-48ed44f744-1778269716729-237627311.png" alt="Circular badge with flame icon and text 'OPEN FIRE GRILLED FLAVOR' in navy and cream" loading="lazy" decoding="async" aria-hidden="true" style="--deco-x: 9.5%; --deco-y: 78.8%; --deco-w: 11%; --mockup-band-ratio: 5; left: var(--deco-x); top: var(--deco-y); transform: translate(-50%, -50%); width: 11%; max-width: 11%; min-height: max(18px, calc(var(--deco-w) * 0.18)); object-fit: contain; z-index: 18"><img class="deco-asset" data-deco-asset-id="asset-4-scribble" data-deco-role="scribble" data-deco-priority="2" data-deco-anchor="bottom" data-deco-layer="ornament" data-deco-x="29.8" data-deco-y="92.5" data-deco-bbox="28,29.5,3.5,3" src="https://qastorage.zappy5.com/uploads/2026/05/decorative-6131beb4-684e-4146-8556-403504f6a119-4-scribble-9a5735cfef-1778269755401-43523946.png" alt="Hand-drawn red underline beneath 'ON THE MOVE' text" loading="lazy" decoding="async" aria-hidden="true" style="--deco-x: 29.8%; --deco-y: 92.5%; --deco-w: 4%; --mockup-band-ratio: 5; left: var(--deco-x); top: var(--deco-y); transform: translate(-50%, -50%); width: 4%; max-width: 4%; min-height: max(18px, calc(var(--deco-w) * 0.18)); object-fit: contain; z-index: 8"><img class="deco-asset" data-deco-asset-id="asset-8-painted-doodle" data-deco-role="painted-doodle" data-deco-priority="3" data-deco-anchor="top" data-deco-layer="ornament" data-deco-x="92" data-deco-y="30" data-deco-bbox="84,0,16,12" src="https://qastorage.zappy5.com/uploads/2026/05/decorative-6131beb4-684e-4146-8556-403504f6a119-8-painted-doodle-e3c01d6ad2-1778269755240-799012069.png" alt="Black ink splatter texture in top right corner with halftone dots" loading="lazy" decoding="async" aria-hidden="true" style="--deco-x: 92%; --deco-y: 30%; --deco-w: 16%; --mockup-band-ratio: 5; left: var(--deco-x); top: var(--deco-y); transform: translate(-50%, -50%); width: 16%; max-width: 16%; min-height: max(18px, calc(var(--deco-w) * 0.18)); object-fit: contain; z-index: 8"><img class="deco-asset" data-deco-asset-id="asset-9-painted-doodle" data-deco-role="painted-doodle" data-deco-priority="3" data-deco-anchor="top" data-deco-layer="ornament" data-deco-x="4" data-deco-y="50" data-deco-bbox="0,0,8,20" src="https://qastorage.zappy5.com/uploads/2026/05/decorative-6131beb4-684e-4146-8556-403504f6a119-9-painted-doodle-9b8ae2b0fc-1778269753017-316296517.png" alt="Black ink drip and splatter running down left edge" loading="lazy" decoding="async" aria-hidden="true" style="--deco-x: 4%; --deco-y: 50%; --deco-w: 8%; --mockup-band-ratio: 5; left: var(--deco-x); top: var(--deco-y); transform: translate(-50%, -50%); width: 8%; max-width: 8%; min-height: max(18px, calc(var(--deco-w) * 0.18)); object-fit: contain; z-index: 8"><img class="deco-asset" data-deco-asset-id="asset-10-painted-doodle" data-deco-role="painted-doodle" data-deco-priority="3" data-deco-anchor="bottom" data-deco-layer="ornament" data-deco-x="92" data-deco-y="70" data-deco-bbox="84,14,16,12" src="https://qastorage.zappy5.com/uploads/2026/05/decorative-6131beb4-684e-4146-8556-403504f6a119-10-painted-doodle-92e40c4def-1778269753693-581706696.png" alt="Red and orange paint splatter with halftone texture in upper right" loading="lazy" decoding="async" aria-hidden="true" style="--deco-x: 92%; --deco-y: 70%; --deco-w: 16%; --mockup-band-ratio: 5; left: var(--deco-x); top: var(--deco-y); transform: translate(-50%, -50%); width: 16%; max-width: 16%; min-height: max(18px, calc(var(--deco-w) * 0.18)); object-fit: contain; z-index: 8"></section>
+
+<section class="home-features-section statband-section" data-layout-spec="Home-features" data-reveal="" style="position: relative;">
+  <div class="home-features-inner">
+
+    <!-- LEFT: Tagline -->
+    
+
+    <!-- RIGHT: 4 icon+label columns -->
+    <div class="home-features-pillars" data-reveal-stagger="">
+
+      <div class="home-features-pillar">
+        <div class="home-features-icon-wrap">
+          <img data-placeholder="home-features-feature-icon-1" data-context="Stylized burger icon in golden-amber line art, top-down view showing bun and patty layers. Composition: isolated icon, centered. Framing: tight square crop, centered with negative space. Background: transparent over dark charcoal. Treatment: background-removed cutout" data-treatment="background-removed cutout" data-dominant-color="#f5c842" data-aspect-ratio="1:1" class="cutout home-features-icon" alt="Burger icon — smashed to perfection" width="600" height="600" src="/assets/site-home-features-feature-icon-1.webp">
+        </div>
+        <p class="home-features-label">Smashed to<br>Perfection</p>
+      </div>
+
+      <div class="home-features-pillar">
+        <div class="home-features-icon-wrap">
+          <img data-placeholder="home-features-feature-icon-2" data-context="Two leaf sprout icon in teal line art representing fresh quality ingredients. Composition: isolated icon, centered. Framing: tight square crop, centered with negative space. Background: transparent over dark charcoal. Treatment: background-removed cutout" data-treatment="background-removed cutout" data-dominant-color="#2ab5a5" data-aspect-ratio="1:1" class="cutout home-features-icon" alt="Leaf sprout icon — fresh quality ingredients" width="600" height="600" src="/assets/site-home-features-feature-icon-2.webp">
+        </div>
+        <p class="home-features-label">Fresh Quality<br>Ingredients</p>
+      </div>
+
+      <div class="home-features-pillar">
+        <div class="home-features-icon-wrap">
+          <img data-placeholder="home-features-feature-icon-3" data-context="Flame icon in red-orange line art representing grilling hot and fast. Composition: isolated icon, centered. Framing: tight square crop, centered with negative space. Background: transparent over dark charcoal. Treatment: background-removed cutout" data-treatment="background-removed cutout" data-dominant-color="#e8380d" data-aspect-ratio="1:1" class="cutout home-features-icon" alt="Flame icon — grilled hot and fast" width="600" height="600" src="/assets/site-home-features-feature-icon-3.webp">
+        </div>
+        <p class="home-features-label">Grilled Hot<br>&amp; Fast</p>
+      </div>
+
+      <div class="home-features-pillar">
+        <div class="home-features-icon-wrap">
+          <img data-placeholder="home-features-feature-icon-4" data-context="Drink cup with straw icon in golden-amber line art representing satisfaction. Composition: isolated icon, centered. Framing: tight square crop, centered with negative space. Background: transparent over dark charcoal. Treatment: background-removed cutout" data-treatment="background-removed cutout" data-dominant-color="#f5c842" data-aspect-ratio="1:1" class="cutout home-features-icon" alt="Drink cup icon — made to satisfy" width="600" height="600" src="/assets/site-home-features-feature-icon-4.webp">
+        </div>
+        <p class="home-features-label">Made to<br>Satisfy</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Divider rule between tagline and pillars (decorative) -->
+  <div class="home-features-rule" aria-hidden="true"></div>
+
+<img class="deco-asset" data-deco-asset-id="asset-5-washi-tape" data-deco-role="washi-tape" data-deco-priority="2" data-deco-anchor="bottom" data-deco-layer="sticker" data-deco-x="14" data-deco-y="98" data-deco-bbox="6,50,16,0.8" src="https://qastorage.zappy5.com/uploads/2026/05/decorative-6131beb4-684e-4146-8556-403504f6a119-5-washi-tape-63c772d900-1778269733725-739296489.png" alt="Red horizontal line underscoring 'ZERO SHORTCUTS' text" loading="lazy" decoding="async" aria-hidden="true" style="--deco-x: 14%; --deco-y: 98%; --deco-w: 16%; --mockup-band-ratio: 5; left: var(--deco-x); top: var(--deco-y); transform: translate(-50%, -50%); width: 16%; max-width: 16%; min-height: max(18px, calc(var(--deco-w) * 0.18)); object-fit: contain; z-index: 18"></section>
+
+<section class="home-menu-section" data-layout-spec="Home-menu" style="background:#f5f0e4; color:var(--text-dark); position: relative;">
+  <!-- Grain texture overlay -->
+  <div class="home-menu-grain" aria-hidden="true"></div>
+
+  <div class="home-menu-container">
+
+    <!-- LEFT: Editorial copy block -->
+    <div class="home-menu-intro" data-reveal="">
+      
+      <h2 class="home-menu-headline">BURGERS<br><span class="font-accent home-menu-accent">THAT HIT DIFFERENT</span></h2>
+      <p class="home-menu-subtext">Three signature smash burgers, each pressed to perfection on a flat-top griddle. Fresh ingredients, zero shortcuts — just big, bold flavor delivered right to your neighborhood.</p>
+      <a href="/menu" class="btn-secondary home-menu-cta">VIEW FULL MENU →</a>
+
+      <!-- Stats scaffold (required pattern) -->
+      <div class="stats-section home-menu-stats">
+        <div class="stats-grid">
+          <div class="stat">
+            <span class="stat-number" data-count-up="3">0</span>
+            <span class="stat-label">Signature Burgers</span>
+          </div>
+          <div class="stat">
+            <span class="stat-number" data-count-up="100" data-count-suffix="%">0</span>
+            <span class="stat-label">Fresh Ingredients</span>
+          </div>
+          <div class="stat">
+            <span class="stat-number" data-count-up="0" data-count-suffix=" shortcuts">0</span>
+            <span class="stat-label">Zero Shortcuts</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Three burger cutout cards -->
+    <div class="home-menu-cards" data-reveal-stagger="">
+
+      <!-- Card 1: Station Classic -->
+      <div class="home-menu-item">
+        <div class="home-menu-item-deco" aria-hidden="true">
+          <svg data-no-icon-edit="true" aria-hidden="true" width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16 2L18.5 11H28L20.5 16.5L23 25.5L16 20L9 25.5L11.5 16.5L4 11H13.5L16 2Z" fill="var(--accent)"></path>
+          </svg>
+        </div>
+        <div class="home-menu-img-wrap">
+          <img data-placeholder="home-menu-product-shot-1" data-context="Station Classic smash burger with American cheese, pickles, onions, and station sauce on a toasted brioche bun, photographed at eye level showing all layers. Composition: eye-level, isolated cutout, centered. Framing: tight crop centered with negative space, slight overhead angle. Background: transparent over cream. Treatment: background-removed cutout" data-treatment="background-removed cutout" data-dominant-color="#c8762a" data-aspect-ratio="1:1" class="cutout home-menu-burger-img" alt="Station Classic smash burger with cheese, pickles and station sauce" width="600" height="600" src="/assets/site-home-menu-product-shot-1.webp">
+        </div>
+        <div class="home-menu-item-info">
+          <h3 class="home-menu-item-name">STATION CLASSIC</h3>
+          <p class="home-menu-item-desc">American cheese, pickles, caramelized onions &amp; station sauce on a toasted brioche bun</p>
+          <span class="home-menu-item-price">$9.99</span>
+        </div>
+      </div>
+
+      <!-- Card 2: Spicy Firehouse -->
+      <div class="home-menu-item home-menu-item--featured">
+        <div class="home-menu-item-deco" aria-hidden="true">
+          <svg data-no-icon-edit="true" aria-hidden="true" width="28" height="36" viewBox="0 0 28 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M14 2C14 2 22 10 22 18C22 24 18 28 14 28C10 28 6 24 6 18C6 14 8 11 10 9C10 9 9 14 12 16C12 16 10 10 14 2Z" fill="var(--primary)"></path>
+            <path d="M14 22C14 22 18 18 18 14C18 14 16 16 14 16C12 16 10 14 10 14C10 18 14 22 14 22Z" fill="var(--accent)"></path>
+          </svg>
+        </div>
+        <div class="home-menu-img-wrap">
+          <img data-placeholder="home-menu-product-shot-2" data-context="Spicy Firehouse smash burger with pepper jack cheese, bacon, jalapeños, and spicy mayo on a toasted brioche bun, photographed at eye level showing all layers. Composition: eye-level, isolated cutout, centered. Framing: tight crop centered with negative space. Background: transparent over cream. Treatment: background-removed cutout" data-treatment="background-removed cutout" data-dominant-color="#c8762a" data-aspect-ratio="1:1" class="cutout home-menu-burger-img" alt="Spicy Firehouse smash burger with pepper jack, bacon and jalapeños" width="600" height="600" src="/assets/site-home-menu-product-shot-2.webp">
+        </div>
+        <div class="home-menu-item-info">
+          <h3 class="home-menu-item-name">SPICY FIREHOUSE</h3>
+          <p class="home-menu-item-desc">Pepper jack cheese, crispy bacon, jalapeños &amp; spicy mayo on a toasted brioche bun</p>
+          <span class="home-menu-item-price">$11.99</span>
+        </div>
+      </div>
+
+      <!-- Card 3: Truffle Mushroom -->
+      <div class="home-menu-item">
+        <div class="home-menu-item-deco" aria-hidden="true">
+          <svg data-no-icon-edit="true" aria-hidden="true" width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M5 8L15 3L25 8V14C25 20 20 26 15 28C10 26 5 20 5 14V8Z" stroke="var(--secondary)" stroke-width="2" fill="none"></path>
+            <path d="M10 15L13 18L20 11" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path>
+          </svg>
+        </div>
+        <div class="home-menu-img-wrap">
+          <img data-placeholder="home-menu-product-shot-3" data-context="Truffle Mushroom smash burger with Swiss cheese, mushrooms, and truffle aioli on a toasted brioche bun, photographed at eye level showing all layers. Composition: eye-level, isolated cutout, centered. Framing: tight crop centered with negative space. Background: transparent over cream. Treatment: background-removed cutout" data-treatment="background-removed cutout" data-dominant-color="#c8762a" data-aspect-ratio="1:1" class="cutout home-menu-burger-img" alt="Truffle Mushroom smash burger with Swiss cheese and truffle aioli" width="600" height="600" src="/assets/site-home-menu-product-shot-3.webp">
+        </div>
+        <div class="home-menu-item-info">
+          <h3 class="home-menu-item-name">TRUFFLE MUSHROOM</h3>
+          <p class="home-menu-item-desc">Swiss cheese, sautéed mushrooms &amp; truffle aioli on a toasted brioche bun</p>
+          <span class="home-menu-item-price">$12.99</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Thick red rule divider -->
+  <div class="home-menu-rule" aria-hidden="true"></div>
+
+<img class="deco-asset" data-deco-asset-id="asset-6-sticker" data-deco-role="sticker" data-deco-priority="2" data-deco-anchor="bottom" data-deco-layer="sticker" data-deco-x="10" data-deco-y="86.3" data-deco-bbox="5,56,10,2.5" src="https://qastorage.zappy5.com/uploads/2026/05/decorative-6131beb4-684e-4146-8556-403504f6a119-6-sticker-04ca1c8223-1778269733728-420074499.png" alt="Red ribbon banner sticker with white text 'FAN FAVORITES'" loading="lazy" decoding="async" aria-hidden="true" style="--deco-x: 10%; --deco-y: 86.3%; --deco-w: 10%; --mockup-band-ratio: 5; left: var(--deco-x); top: var(--deco-y); transform: translate(-50%, -50%); width: 10%; max-width: 10%; min-height: max(18px, calc(var(--deco-w) * 0.18)); object-fit: contain; z-index: 18"><img class="deco-asset" data-deco-asset-id="asset-11-painted-doodle" data-deco-role="painted-doodle" data-deco-priority="3" data-deco-anchor="bottom" data-deco-layer="ornament" data-deco-x="33" data-deco-y="85" data-deco-bbox="30,55,6,4" src="https://qastorage.zappy5.com/uploads/2026/05/decorative-6131beb4-684e-4146-8556-403504f6a119-11-painted-doodle-a41ab63305-1778269770058-981593576.png" alt="Black hand-drawn arrow pointing down and right toward first burger" loading="lazy" decoding="async" aria-hidden="true" style="--deco-x: 33%; --deco-y: 85%; --deco-w: 6%; --mockup-band-ratio: 5; left: var(--deco-x); top: var(--deco-y); transform: translate(-50%, -50%); width: 6%; max-width: 6%; min-height: max(18px, calc(var(--deco-w) * 0.18)); object-fit: contain; z-index: 8"></section>
+
+<section class="home-schedule-section process-section" data-layout-spec="Home-schedule" style="position: relative;">
+
+  <!-- Grain texture overlay -->
+  <div class="home-schedule-section__grain" aria-hidden="true"></div>
+
+  <div class="home-schedule-section__inner">
+
+    <!-- LEFT: Headline Card -->
+    <div class="home-schedule-section__headline-card card-schedule-headline-card" data-reveal="">
+      <p class="eyebrow home-schedule-section__eyebrow">Weekly Locations</p>
+      <h2 class="home-schedule-section__card-title">CATCH US<br><span class="font-accent">THIS WEEK</span></h2>
+      <p class="home-schedule-section__card-body">Find Burger Station rolling through your neighborhood. Fresh smash burgers, hot off the griddle — wherever the truck stops, the party starts.</p>
+      <a href="/contact" class="btn-primary home-schedule-section__cta">SEE FULL SCHEDULE →</a>
+    </div>
+
+    <!-- CENTER: Timeline (5 day columns as process-steps) -->
+    <div class="home-schedule-section__timeline-wrap">
+      <div class="home-schedule-section__dashed-line" aria-hidden="true"></div>
+      <ol class="process-steps home-schedule-section__process-steps" data-reveal-stagger="">
+
+        <li class="process-step home-schedule-section__day-col">
+          <span class="step-num home-schedule-section__step-num" aria-hidden="true">01</span>
+          <div class="home-schedule-section__pin" aria-hidden="true">
+            <svg data-element-type="icon" data-icon-type="svg" width="24" height="30" viewBox="0 0 24 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 0C5.373 0 0 5.373 0 12c0 9 12 18 12 18S24 21 24 12C24 5.373 18.627 0 12 0zm0 16a4 4 0 110-8 4 4 0 010 8z" fill="#2ab5a5"></path></svg>
+          </div>
+          <div class="home-schedule-section__day-info">
+            <span class="home-schedule-section__day-label">MON</span>
+            <span class="home-schedule-section__location">Downtown Plaza</span>
+            <span class="home-schedule-section__hours">11am – 3pm</span>
+          </div>
+        </li>
+
+        <li class="process-step home-schedule-section__day-col">
+          <span class="step-num home-schedule-section__step-num" aria-hidden="true">02</span>
+          <div class="home-schedule-section__pin" aria-hidden="true">
+            <svg data-element-type="icon" data-icon-type="svg" width="24" height="30" viewBox="0 0 24 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 0C5.373 0 0 5.373 0 12c0 9 12 18 12 18S24 21 24 12C24 5.373 18.627 0 12 0zm0 16a4 4 0 110-8 4 4 0 010 8z" fill="#2ab5a5"></path></svg>
+          </div>
+          <div class="home-schedule-section__day-info">
+            <span class="home-schedule-section__day-label">TUE</span>
+            <span class="home-schedule-section__location">Riverside Park</span>
+            <span class="home-schedule-section__hours">12pm – 4pm</span>
+          </div>
+        </li>
+
+        <li class="process-step home-schedule-section__day-col">
+          <span class="step-num home-schedule-section__step-num" aria-hidden="true">03</span>
+          <div class="home-schedule-section__pin" aria-hidden="true">
+            <svg data-element-type="icon" data-icon-type="svg" width="24" height="30" viewBox="0 0 24 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 0C5.373 0 0 5.373 0 12c0 9 12 18 12 18S24 21 24 12C24 5.373 18.627 0 12 0zm0 16a4 4 0 110-8 4 4 0 010 8z" fill="#2ab5a5"></path></svg>
+          </div>
+          <div class="home-schedule-section__day-info">
+            <span class="home-schedule-section__day-label">WED</span>
+            <span class="home-schedule-section__location">Tech Hub Lot</span>
+            <span class="home-schedule-section__hours">11am – 2pm</span>
+          </div>
+        </li>
+
+        <li class="process-step home-schedule-section__day-col">
+          <span class="step-num home-schedule-section__step-num" aria-hidden="true">04</span>
+          <div class="home-schedule-section__pin" aria-hidden="true">
+            <svg data-element-type="icon" data-icon-type="svg" width="24" height="30" viewBox="0 0 24 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 0C5.373 0 0 5.373 0 12c0 9 12 18 12 18S24 21 24 12C24 5.373 18.627 0 12 0zm0 16a4 4 0 110-8 4 4 0 010 8z" fill="#2ab5a5"></path></svg>
+          </div>
+          <div class="home-schedule-section__day-info">
+            <span class="home-schedule-section__day-label">THU</span>
+            <span class="home-schedule-section__location">Midtown Square</span>
+            <span class="home-schedule-section__hours">12pm – 5pm</span>
+          </div>
+        </li>
+
+        <li class="process-step home-schedule-section__day-col">
+          <span class="step-num home-schedule-section__step-num" aria-hidden="true">05</span>
+          <div class="home-schedule-section__pin" aria-hidden="true">
+            <svg data-element-type="icon" data-icon-type="svg" width="24" height="30" viewBox="0 0 24 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 0C5.373 0 0 5.373 0 12c0 9 12 18 12 18S24 21 24 12C24 5.373 18.627 0 12 0zm0 16a4 4 0 110-8 4 4 0 010 8z" fill="#2ab5a5"></path></svg>
+          </div>
+          <div class="home-schedule-section__day-info">
+            <span class="home-schedule-section__day-label">FRI</span>
+            <span class="home-schedule-section__location">Harbor Market</span>
+            <span class="home-schedule-section__hours">11am – 6pm</span>
+          </div>
+        </li>
+
+      </ol>
+    </div>
+
+    <!-- RIGHT: Food Truck Illustration + Social Badge Space -->
+    <div class="home-schedule-section__truck-panel">
+      <div class="home-schedule-section__truck-img-wrap" data-reveal="">
+        <img data-placeholder="home-schedule-inline-tile-1" data-context="Teal food truck with 'BURGER STATION' branding on the side, illustrated in a stylized graphic style, moving at speed with motion lines. Composition: 3/4 angle, side view, illustrated style. Framing: right-aligned, partial crop at END of band. Background: dark charcoal with subtle texture. Treatment: none" data-treatment="none" data-dominant-color="#2ab5a5" data-aspect-ratio="3:2" width="1200" height="800" src="/assets/site-home-schedule-inline-tile-1.webp" alt="Teal Burger Station food truck illustrated graphic with motion lines">
+      </div>
+      <!-- Badge injector space — do NOT add social badge HTML here; PNG injector owns it -->
+      <div class="home-schedule-section__badge-anchor" aria-hidden="true"></div>
+    </div>
+
+  </div>
+
+<img class="deco-asset" data-deco-asset-id="asset-7-badge" data-deco-role="badge" data-deco-priority="2" data-deco-anchor="bottom" data-deco-layer="sticker" data-deco-x="81.5" data-deco-y="77.5" data-deco-bbox="74,81,15,9" src="https://qastorage.zappy5.com/uploads/2026/05/decorative-6131beb4-684e-4146-8556-403504f6a119-7-badge-56ef064e78-1778269736547-918904810.png" alt="Yellow rectangular badge with black text 'FOLLOW US FOR REAL-TIME UPDATES' and social media icons" loading="lazy" decoding="async" aria-hidden="true" style="--deco-x: 81.5%; --deco-y: 77.5%; --deco-w: 15%; --mockup-band-ratio: 5; left: var(--deco-x); top: var(--deco-y); transform: translate(-50%, -50%); width: 15%; max-width: 15%; min-height: max(18px, calc(var(--deco-w) * 0.18)); object-fit: contain; z-index: 18"></section>
+
+<section class="home-cta-section dualpanel-section" data-layout-spec="Home-cta" style="padding:0; position: relative;">
+  <div class="dualpanel-grid">
+
+    <!-- START PANEL: Red catering promo -->
+    <aside class="dualpanel-pane dualpanel-pane--start" data-reveal="">
+      <div class="cta-start-inner">
+        <p class="eyebrow cta-eyebrow">Catering Services</p>
+        <h2 class="dualpanel-title cta-headline">PLANNING AN EVENT?</h2>
+        <p class="dualpanel-copy cta-subheadline">WE CATER. YOU CELEBRATE.</p>
+
+        <div class="cta-icons-row">
+          <div class="cta-icon-item">
+            <div class="cta-icon-wrap">
+              <img data-placeholder="home-cta-feature-icon-1" data-context="Briefcase icon in white line art representing corporate lunches catering service. Composition: isolated icon, centered. Framing: tight square, centered. Background: transparent over red. Treatment: background-removed cutout" data-treatment="background-removed cutout" data-dominant-color="#ffffff" data-aspect-ratio="1:1" class="cutout" alt="Briefcase icon for corporate lunches" width="600" height="600" src="/assets/site-home-cta-feature-icon-1.webp">
+            </div>
+            <span class="cta-icon-label">CORPORATE LUNCHES</span>
+          </div>
+
+          <div class="cta-icon-divider" aria-hidden="true"></div>
+
+          <div class="cta-icon-item">
+            <div class="cta-icon-wrap">
+              <img data-placeholder="home-cta-feature-icon-2" data-context="Champagne glasses clinking icon in white line art representing weddings and parties catering. Composition: isolated icon, centered. Framing: tight square, centered. Background: transparent over red. Treatment: background-removed cutout" data-treatment="background-removed cutout" data-dominant-color="#ffffff" data-aspect-ratio="1:1" class="cutout" alt="Champagne glasses icon for weddings and parties" width="600" height="600" src="/assets/site-home-cta-feature-icon-2.webp">
+            </div>
+            <span class="cta-icon-label">WEDDINGS &amp; PARTIES</span>
+          </div>
+
+          <div class="cta-icon-divider" aria-hidden="true"></div>
+
+          <div class="cta-icon-item">
+            <div class="cta-icon-wrap">
+              <img data-placeholder="home-cta-feature-icon-3" data-context="Festival tent or stage icon in white line art representing festivals and events catering. Composition: isolated icon, centered. Framing: tight square, centered. Background: transparent over red. Treatment: background-removed cutout" data-treatment="background-removed cutout" data-dominant-color="#ffffff" data-aspect-ratio="1:1" class="cutout" alt="Festival tent icon for festivals and events" width="600" height="600" src="/assets/site-home-cta-feature-icon-3.webp">
+            </div>
+            <span class="cta-icon-label">FESTIVALS &amp; EVENTS</span>
+          </div>
+        </div>
+
+        <a class="btn btn-cta-outline" href="/contact">SEE CATERING OPTIONS →</a>
+      </div>
+    </aside>
+
+    <!-- END PANEL: Dark CTA badge -->
+    <aside class="dualpanel-pane dualpanel-pane--end" data-reveal="">
+      <div class="cta-end-inner">
+        <p class="eyebrow cta-eyebrow-dark">Book The Truck</p>
+
+        
+
+        <div class="cta-social-row">
+          <span class="cta-social-label">FOLLOW US FOR REAL-TIME UPDATES</span>
+          <div class="cta-social-icons">
+            <a href="https://instagram.com/[instagram_handle]" class="cta-social-link" aria-label="Instagram" target="_blank" rel="noopener">
+              <i class="fab fa-instagram"></i>
+            </a>
+            <a href="https://facebook.com/[facebook_handle]" class="cta-social-link" aria-label="Facebook" target="_blank" rel="noopener">
+              <i class="fab fa-facebook-f"></i>
+            </a>
+            <a href="https://wa.me/[whatsapp_handle]" class="cta-social-link" aria-label="WhatsApp" target="_blank" rel="noopener">
+              <i class="fab fa-whatsapp"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+  </div>
+<img class="deco-asset" data-deco-asset-id="asset-2-sticker" data-deco-role="sticker" data-deco-priority="1" data-deco-anchor="top" data-deco-layer="sticker" data-deco-x="74.5" data-deco-y="62.5" data-deco-bbox="64,87,21,11" src="https://qastorage.zappy5.com/uploads/2026/05/decorative-6131beb4-684e-4146-8556-403504f6a119-2-sticker-2640db0625-1778269717628-686840268.png" alt="Dark navy irregular sticker shape with yellow text 'LET'S MAKE IT DELICIOUS' and 'BOOK OUR TRUCK' button" loading="lazy" decoding="async" aria-hidden="true" style="--deco-x: 74.5%; --deco-y: 62.5%; --deco-w: 21%; --mockup-band-ratio: 5; left: var(--deco-x); top: var(--deco-y); transform: translate(-50%, -50%); width: 21%; max-width: 21%; min-height: max(18px, calc(var(--deco-w) * 0.18)); object-fit: contain; z-index: 18"></section>
+  </main>
+  
+  <footer class="site-footer"><div class="footer-container"><div class="footer-top"><div class="footer-col footer-brand"><div class="footer-logo-wrap"><img class="logo" data-placeholder="logo" data-context="business logo" width="150" height="40" src="/assets/burger-station-food-beverage-logo.webp" alt="Burger Station"></div><p class="footer-tagline">Bold flavors. Real ingredients. No compromises. Burger Station is where the street meets the grill.</p><div class="footer-social"></div></div><div class="footer-col footer-nav"><h3 class="footer-heading">Navigate</h3><ul class="footer-links"><li><a href="#features">Our Promise</a></li><li><a href="#menu">Menu</a></li><li><a href="#schedule">Find Us</a></li></ul></div><div class="footer-col footer-contact-col"><h3 class="footer-heading">Get In Touch</h3><ul class="footer-contact"><li><span class="contact-icon"><i class="fas fa-envelope"></i></span><span class="contact-text"><a href="mailto:[business_email]">[business_email]</a></span></li><li><span class="contact-icon"><i class="fas fa-phone"></i></span><span class="contact-text"><a href="tel:[business_phone]">[business_phone]</a></span></li><li><a href="/"><span class="contact-icon"><i class="fas fa-map-marker-alt"></i></span><span class="contact-text">[business_address]</span></a></li></ul></div><div class="footer-col footer-hours"><h3 class="footer-heading">Hours</h3><ul class="footer-hours-list"><li><a href="/"><span>Mon – Fri</span><span>11am – 10pm</span></a></li><li><a href="/"><span>Saturday</span><span>10am – 11pm</span></a></li><li><a href="/"><span>Sunday</span><span>12pm – 9pm</span></a></li></ul></div></div><div class="footer-bottom"><div class="footer-bottom-left"><span class="footer-copyright">© 2026 Burger Station. All rights reserved.</span></div><div class="footer-bottom-right"><nav class="footer-legal"><a href="/privacy">Privacy Policy</a><a href="/terms">Terms &amp; Conditions</a><a href="/accessibility">Accessibility</a></nav><a href="https://zappy5.com" target="_blank" class="zappy-attribution">Generated by Zappy</a></div></div></div></footer>
+  
+  
+  
+  <div data-integration="accessibility:toolbar"></div>
+
+    <script src="/script.js"></script>
+
+    <script id="zappy-mobile-submenu-script">
+    (function() {
+      function initMobileSubmenuToggles() {
+        if (window.innerWidth > 768) {
+          document.querySelectorAll('.mobile-submenu-toggle').forEach(function(btn) { btn.remove(); });
+          document.querySelectorAll('.sub-menu.mobile-expanded').forEach(function(menu) { menu.classList.remove('mobile-expanded'); });
+          return;
+        }
+        var items = document.querySelectorAll('.nav-menu li:has(.sub-menu), nav li:has(.sub-menu), .navbar li:has(.sub-menu), #navMenu li:has(.sub-menu)');
+        items.forEach(function(li) {
+          if (li.querySelector('.mobile-submenu-toggle')) return;
+          var submenu = li.querySelector('.sub-menu');
+          var parentLink = li.querySelector(':scope > a');
+          if (!submenu || !parentLink) return;
+          var toggleBtn = document.createElement('button');
+          toggleBtn.className = 'mobile-submenu-toggle';
+          toggleBtn.setAttribute('aria-label', 'Toggle submenu');
+          toggleBtn.setAttribute('type', 'button');
+          parentLink.insertAdjacentElement('afterend', toggleBtn);
+          toggleBtn.addEventListener('click', function(e) {
+            e.preventDefault(); e.stopPropagation();
+            document.querySelectorAll('.sub-menu.mobile-expanded').forEach(function(menu) {
+              if (menu !== submenu) { menu.classList.remove('mobile-expanded'); var t = menu.parentElement.querySelector('.mobile-submenu-toggle'); if(t) t.classList.remove('expanded'); }
+            });
+            submenu.classList.toggle('mobile-expanded');
+            toggleBtn.classList.toggle('expanded');
+          });
+        });
+      }
+      if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', initMobileSubmenuToggles); }
+      else { initMobileSubmenuToggles(); }
+      var resizeTimer; window.addEventListener('resize', function() { clearTimeout(resizeTimer); resizeTimer = setTimeout(initMobileSubmenuToggles, 250); });
+      // Re-initialize when mobile menu becomes visible (MutationObserver)
+      var observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+          if (mutation.type === 'attributes') {
+            var target = mutation.target;
+            if (target.classList && (target.classList.contains('active') || target.classList.contains('open'))) {
+              setTimeout(initMobileSubmenuToggles, 100);
+            }
+          }
+        });
+      });
+      setTimeout(function() {
+        document.querySelectorAll('.mobile-menu, .nav-menu, #navMenu, nav').forEach(function(menu) {
+          observer.observe(menu, { attributes: true, attributeFilter: ['class', 'style'] });
+        });
+      }, 500);
+    })();
+    </script>
+</body>
+</html>
